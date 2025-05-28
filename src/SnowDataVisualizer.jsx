@@ -6,7 +6,7 @@ export default function SnowDataVisualizer() {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch(import.meta.env.BASE_URL + 'data/myfile.csv')
+    fetch(import.meta.env.BASE_URL + 'data/MySnowData.csv')
       .then((res) => res.text())
       .then((csvText) => {
         Papa.parse(csvText, {
