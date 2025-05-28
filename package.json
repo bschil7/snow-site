@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://bschil7.github.io/snow-site",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
