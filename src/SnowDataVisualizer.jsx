@@ -62,31 +62,24 @@ export default function SnowDataVisualizer() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Open Runs % Over Time by Season</h2>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              type="category"
-              allowDuplicatedCategory={false}
-              tick={{ fontSize: 12 }}
-              interval="preserveStartEnd"
-            />
-            <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(v) => `${v}%`} />
-            <Legend />
-            {Object.entries(dataBySeason).map(([season, data], index) => (
-              <Line
-                key={season}
-                data={data}
-                type="monotone"
-                dataKey="openRunsPct"
-                name={`Season ${season}`}
-                stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
-                dot={false}
-              />
-            ))}
-          </LineChart>
+            <LineChart data={combinedData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {seasons.map((season) => (
+                    <Line
+                        key={season}
+                        type="monotone"
+                        dataKey={season}
+                        stroke={getColorForSeason(season)}
+                        dot={false}
+                    />
+                ))}
+            </LineChart>
         </ResponsiveContainer>
+
       </div>
     </div>
   );
