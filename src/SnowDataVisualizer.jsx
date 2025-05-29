@@ -22,21 +22,24 @@ export default function SnowDataVisualizer() {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            // Filter out "Out of season" entries
-            const filteredData = results.data.filter(
-              (row) => row["Date in season"] !== "Out of season"
+            const filtered = results.data.filter(
+              (row) =>
+                row["Date in season"] !== "Out of Season"
             );
 
-            // Group data by season
             const seasonGroups = {};
-            filteredData.forEach((row) => {
+
+            filtered.forEach((row) => {
               const season = row["Season"];
-              if (!seasonGroups[season]) {
-                seasonGroups[season] = [];
-              }
+              const snapshotDate = row["snapshot_date"];
+              const monthDay = formatMonthDay(snapshotDate);
+              const openRunsPct = parseFloat(row["Open Runs %"]?.replace("%", "") || 0);
+
+              if (!seasonGroups[season]) seasonGroups[season] = [];
+
               seasonGroups[season].push({
-                date: row["snapshot_date"],
-                openRunsPct: parseFloat(row["Open Runs %"].replace("%", "")),
+                date: monthDay, // Just MM-DD
+                openRunsPct,
               });
             });
 
@@ -45,6 +48,12 @@ export default function SnowDataVisualizer() {
         });
       });
   }, []);
+
+  // Converts YYYY-MM-DD to MM-DD
+  function formatMonthDay(dateStr) {
+    const parts = dateStr.split("-");
+    return parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateStr;
+  }
 
   return (
     <div className="p-4">
@@ -60,6 +69,7 @@ export default function SnowDataVisualizer() {
               type="category"
               allowDuplicatedCategory={false}
               tick={{ fontSize: 12 }}
+              interval="preserveStartEnd"
             />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <Tooltip formatter={(v) => `${v}%`} />
@@ -72,6 +82,7 @@ export default function SnowDataVisualizer() {
                 dataKey="openRunsPct"
                 name={`Season ${season}`}
                 stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
+                dot={false}
               />
             ))}
           </LineChart>
@@ -80,4 +91,3 @@ export default function SnowDataVisualizer() {
     </div>
   );
 }
-
