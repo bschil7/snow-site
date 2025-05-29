@@ -12,58 +12,39 @@ import {
 import Papa from "papaparse";
 
 export default function SnowDataVisualizer() {
-  const [openRunsData, setOpenRunsData] = useState([]);
-  const [baseSnowData, setBaseSnowData] = useState([]);
+  const [dataBySeason, setDataBySeason] = useState({});
 
   useEffect(() => {
-    fetch(import.meta.env.BASE_URL + "data/MySnowData.csv")
+    fetch(import.meta.env.BASE_URL + 'data/MySnowData.csv')
       .then((res) => res.text())
       .then((csvText) => {
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const filtered = results.data.filter(
+            // Filter out "Out of season" entries
+            const filteredData = results.data.filter(
               (row) => row["Date in season"] !== "Out of season"
             );
 
-            // Prepare base snow data (simple flat array)
-            const baseSnowParsed = filtered.map((row) => ({
-              date: row["snapshot_date"],
-              baseSnow: parseFloat(row["base_snow"] || 0),
-            }));
-
-            // Prepare open runs % data, pivoted by season
-            const pivotedByDate = {};
-
-            filtered.forEach((row) => {
-              const date = row["snapshot_date"];
-              const season = row["season"];
-              const openRunsPct = parseFloat(row["Open Runs %"].replace("%", ""));
-
-              if (!pivotedByDate[date]) {
-                pivotedByDate[date] = { date };
+            // Group data by season
+            const seasonGroups = {};
+            filteredData.forEach((row) => {
+              const season = row["Season"];
+              if (!seasonGroups[season]) {
+                seasonGroups[season] = [];
               }
-
-              pivotedByDate[date][season] = openRunsPct;
+              seasonGroups[season].push({
+                date: row["snapshot_date"],
+                openRunsPct: parseFloat(row["Open Runs %"].replace("%", "")),
+              });
             });
 
-            const openRunsParsed = Object.values(pivotedByDate).sort(
-              (a, b) => new Date(a.date) - new Date(b.date)
-            );
-
-            setOpenRunsData(openRunsParsed);
-            setBaseSnowData(baseSnowParsed);
+            setDataBySeason(seasonGroups);
           },
         });
       });
   }, []);
-
-  const seasonKeys = openRunsData.length
-    ? Object.keys(openRunsData[0]).filter((key) => key !== "date")
-    : [];
-
-  const colors = ["#8884d8", "#82ca9d", "#ff7300", "#ff0000", "#00bcd4", "#ffc658", "#a28ae5"];
 
   return (
     <div className="p-4">
@@ -71,51 +52,32 @@ export default function SnowDataVisualizer() {
 
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-2">Open Runs % Over Time by Season</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart
-            data={openRunsData}
-            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-          >
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <XAxis
+              dataKey="date"
+              type="category"
+              allowDuplicatedCategory={false}
+              tick={{ fontSize: 12 }}
+            />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip />
+            <Tooltip formatter={(v) => `${v}%`} />
             <Legend />
-            {seasonKeys.map((season, index) => (
+            {Object.entries(dataBySeason).map(([season, data], index) => (
               <Line
                 key={season}
+                data={data}
                 type="monotone"
-                dataKey={season}
-                stroke={colors[index % colors.length]}
-                name={`Open Runs % (${season})`}
-                dot={false}
+                dataKey="openRunsPct"
+                name={`Season ${season}`}
+                stroke={`hsl(${(index * 60) % 360}, 70%, 50%)`}
               />
             ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Base Snow Depth (inches)</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart
-            data={baseSnowData}
-            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="baseSnow"
-              stroke="#82ca9d"
-              name="Base Snow (in)"
-            />
           </LineChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
 }
+
